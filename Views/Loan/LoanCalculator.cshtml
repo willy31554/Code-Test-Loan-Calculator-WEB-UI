@@ -1,0 +1,173 @@
+﻿@model LoanCalculatorUI.Models.LoanCalculatorViewModel
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Loan Calculator</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.4/css/jquery.dataTables.min.css">
+    <script src="https://cdn.datatables.net/1.11.4/js/jquery.dataTables.min.js"></script>
+    <style>
+        #loanTable {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+            #loanTable th, #loanTable td {
+                border: 1px solid black;
+                padding: 8px;
+            }
+
+            #loanTable thead th {
+                text-transform: uppercase;
+            }
+    </style>
+    <script>
+        $(document).ready(function () {
+            // Initialize DataTable
+            $('#loanTable').DataTable();
+
+            // Handle form submission
+            $('#loanForm').submit(function (event) {
+                event.preventDefault(); // Prevent default form submission behavior
+
+                // Get form values
+                var loanAmount = $('#loanAmount').val();
+                var paymentFrequency = $('#paymentFrequency').val();
+                var loanPeriod = $('#loanPeriod').val();
+                var startDate = $('#startDate').val();
+                var interestType = $('#interestType').val();
+                var sendByEmail = $('#sendByEmail').is(':checked');
+                var downloadAsPdf = $('#downloadAsPdf').is(':checked');
+
+                // Make AJAX request to calculate loan
+                $.ajax({
+                    url: 'http://localhost:5086/api/loans',
+                    type: 'POST',
+                    dataType: 'json',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        LoanAmount: loanAmount,
+                        PaymentFrequency: paymentFrequency,
+                        LoanPeriod: loanPeriod,
+                        StartDate: startDate,
+                        InterestType: interestType,
+                        SendByEmail: sendByEmail,
+                        DownloadAsPdf: downloadAsPdf
+                    }),
+                    success: function (result) {
+                        console.log(result);
+                        // Clear existing table data
+                        $('#loanTable tbody').empty();
+
+                        // Populate loan calculation results
+                        var row =
+                            '<tr>' +
+                            '<td>' + result.loanAmount + '</td>' +
+                            '<td>' + result.paymentFrequency + '</td>' +
+                            '<td>' + result.loanPeriod + '</td>' +
+                            '<td>' + result.startDate + '</td>' +
+                            '<td>' + result.interestType + '</td>' +
+                            '<td>' + result.interestRate + '</td>' +
+                            '<td>' + result.processingFees + '</td>' +
+                            '<td>' + result.exciseDuty + '</td>' +
+                            '<td>' + result.legalFees + '</td>' +
+                            '<td>' + result.interest + '</td>' +
+                            '<td>' + result.takeHomeAmount + '</td>';
+
+                        if (sendByEmail) {
+                            row += '<td><a href="mailto:test@example.com?subject=Loan Calculation Results&body=' + encodeURIComponent(JSON.stringify(result)) + '">Send Email</a></td>';
+                        } else {
+                            row += '<td></td>';
+                        }
+
+                        if (downloadAsPdf) {
+                            var downloadUrl = '@Url.Action("DownloadPdf", "Loan")';
+                            row += '<td><a href="' + downloadUrl + '?data=' + encodeURIComponent(JSON.stringify(result)) + '">Download PDF</a></td>';
+                        } else {
+                            row += '<td></td>';
+                        }
+
+
+                        row += '</tr>';
+
+                        $('#loanTable tbody').append(row);
+                    },
+
+                    error: function (error) {
+                        console.log(error);
+                    }
+                });
+            });
+        });
+
+    </script>
+</head>
+<body>
+    <h1>Loan Calculator</h1>
+
+    <form id="loanForm">
+        <div>
+            <label for="loanAmount">Amount to borrow:</label>
+            <input type="number" id="loanAmount" name="loanAmount" required>
+        </div>
+        <div>
+            <label for="paymentFrequency">Payment frequency:</label>
+            <select id="paymentFrequency" name="paymentFrequency" required>
+                <option value="Annually">Annually</option>
+                <option value="Quarterly">Quarterly</option>
+                <option value="Monthly">Monthly</option>
+                <option value="Every 6 Months">Every 6 Months</option>
+            </select>
+        </div>
+        <div>
+            <label for="loanPeriod">Loan period:</label>
+            <input type="number" id="loanPeriod" name="loanPeriod" required>
+        </div>
+        <div>
+            <label for="startDate">Start date:</label>
+            <input type="date" id="startDate" name="startDate" required>
+        </div>
+        <div>
+            <label for="interestType">Interest type:</label>
+            <select id="interestType" name="interestType" required>
+                <option value="Flat Rate">Flat Rate</option>
+                <option value="Reducing Balance">Reducing Balance</option>
+            </select>
+        </div>
+        <div>
+            <input type="checkbox" id="sendByEmail" name="sendByEmail">
+            <label for="sendByEmail">Send by Email</label>
+        </div>
+        <div>
+            <input type="checkbox" id="downloadAsPdf" name="downloadAsPdf">
+            <label for="downloadAsPdf">Download as PDF</label>
+        </div>
+        <div>
+            <button type="submit">Calculate</button>
+        </div>
+    </form>
+
+    <h2>Loan Calculation Results</h2>
+    <table id="loanTable">
+        <thead>
+            <tr>
+                <th>Loan Amount</th>
+                <th>Payment Frequency</th>
+                <th>Loan Period</th>
+                <th>Start Date</th>
+                <th>Interest Type</th>
+                <th>Interest Rate</th>
+                <th>Processing Fees</th>
+                <th>Excise Duty</th>
+                <th>Legal Fees</th>
+                <th>Interest</th>
+                <th>Take Home Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Loan calculation results will be populated here dynamically -->
+        </tbody>
+    </table>
+</body>
+</html>
